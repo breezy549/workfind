@@ -1,4 +1,6 @@
-# Sellwell
+# Workfind
+
+> Discover work worth learning. Formerly picksell/Sellwell; this README still documents the inherited capture-and-assessment engine (stage 2 base). See `supabase/migrations/` for the stage-1 job discovery schema.
 
 Expo + React Native camera-first app for **web, iOS and Android**. Capture a photo or a short silent video, then request real AI observations through a separate Node server. No gallery upload or skill certification. Seller-confirmed offers can be published and receive non-binding quote requests.
 

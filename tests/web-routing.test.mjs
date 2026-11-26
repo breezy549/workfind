@@ -21,7 +21,7 @@ try{
  const wrong=await fetch(base+'/api/unknown');assert.equal(wrong.status,404);assert.match(wrong.headers.get('content-type'),/application\/json/);
  const bundle=html.match(/src="([^\"]+_expo[^\"]+\.js)"/)[1];
  const asset=await fetch(base+bundle);assert.equal(asset.status,200);assert.match(asset.headers.get('content-type'),/javascript/);
- const js=await asset.text();assert.ok(js.includes('Get your hands-on'));assert.ok(js.includes('Turn them into services with Sellwell.'));
+ const js=await asset.text();assert.ok(js.includes('Get your hands-on'));assert.ok(js.includes('Turn them into services with Workfind.'));
  assert.equal((await fetch(base+'/.env')).status,404);
  assert.equal((await fetch(base+'/_expo/%252e%252e/.env')).status,404);
  console.log('PASS: actual export retains React camera root/hero; separate service page; JSON API; bundle MIME; no secret/static fallback leaks.');

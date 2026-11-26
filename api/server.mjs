@@ -45,5 +45,5 @@ const server=http.createServer(async (req,res)=>{
   send(200,result);
  }catch{send(502,{error:'Analysis unavailable or timed out. Please retry.'});}finally{active--;}
 });
-server.listen(port,process.env.API_HOST || '127.0.0.1',()=>console.log(`PickSell analysis API listening on port ${port}`));
+server.listen(port,process.env.API_HOST || '127.0.0.1',()=>console.log(`Workfind API listening on port ${port}`));
 export { server };
