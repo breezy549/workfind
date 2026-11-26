@@ -10,7 +10,7 @@ async function api(path,options={}){const response=await fetch(path,{...options,
 function addText(parent,title,text){parent.append(el('h3',title),el('p',text));}
 function field(form,name,label,type='text',max=300,min=1){const l=el('label',label),input=el(type==='textarea'?'textarea':'input');input.name=name;input.id=name;input.required=true;input.maxLength=max;input.minLength=min;if(type!=='textarea')input.type=type;l.htmlFor=name;form.append(l,input);return input;}
 function displayService(service){
- content.replaceChildren();content.hidden=false;message.textContent='';document.title=`${service.title} · PickSell`;
+ content.replaceChildren();content.hidden=false;message.textContent='';document.title=`${service.title} · Sellwell`;
  content.append(el('span','SELLER-CONFIRMED OFFER','badge'),el('h1',service.title),el('p',`Offered by ${service.seller_name} · Identity not verified`,'muted'),el('p',service.description));
  const card=el('div',undefined,'card'),dl=el('dl');
  const price=service.pricing_mode==='quote'?'Request a quote':`From ${service.amount.toLocaleString()} ${service.currency} / ${service.pricing_unit}`;
