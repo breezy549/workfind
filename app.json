@@ -1,1 +1,1 @@
-{"expo":{"name":"Workfind","slug":"workfind","version":"1.0.0","orientation":"portrait","userInterfaceStyle":"light","ios":{"supportsTablet":true},"android":{"package":"com.workfind.app"},"web":{"bundler":"metro"},"plugins":[["expo-camera",{"cameraPermission":"Allow Workfind to capture your work.","recordAudioAndroid":false}]]}}
+{"expo":{"name":"Workfind","slug":"workfind","version":"1.0.0","orientation":"portrait","userInterfaceStyle":"light","ios":{"supportsTablet":true},"android":{"package":"com.workfind.app"},"web":{"bundler":"metro"}}}
