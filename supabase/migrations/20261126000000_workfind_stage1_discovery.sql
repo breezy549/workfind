@@ -1,5 +1,5 @@
 -- Workfind stage 1: hands-on job discovery (global from day one).
--- Target: new Supabase project (rnsbkujcknlilkbntnck). NOT applied yet; review first.
+-- Applied 2026-11-26 to Supabase project rnsbkujcknlilkbntnck ("fundscan", shared with that app by owner choice) as migration workfind_stage1_discovery.
 -- Rule: every number or eligibility claim shown to users must cite a source and an as-of date.
 
 -- Reference data -------------------------------------------------------------
