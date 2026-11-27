@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
-import { CATEGORY_LABEL, COUNTRIES, Country, JobRow, countryMeta, loadJobs, money } from './data';
+import { CATEGORY_LABEL, COUNTRIES, Country, JobRow, countryMeta, loadJobs, money, price } from './data';
 import { s } from './styles';
 
 export function JobList({ country, onCountry, onOpen }: { country: Country; onCountry: (c: Country) => void; onOpen: (slug: string) => void }) {
@@ -66,6 +66,9 @@ export function JobList({ country, onCountry, onOpen }: { country: Country; onCo
           </View>
           {r.low != null && r.high != null ? (
             <Text style={s.range}>Middle half earns {money(meta.symbol, r.low)} – {money(meta.symbol, r.high)}/h</Text>
+          ) : null}
+          {r.customerHourly ? (
+            <Text style={s.custRate}>Customers pay {price(meta.symbol, r.customerHourly.low)}–{price(meta.symbol, r.customerHourly.high)}/h for this work</Text>
           ) : null}
           <Text style={s.more}>See the job, training and certificates ›</Text>
         </Pressable>

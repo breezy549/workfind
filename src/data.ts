@@ -20,6 +20,8 @@ export const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export const money = (symbol: string, n: number) => `${symbol}${Number(n).toFixed(2)}`;
+// Whole-dollar prices with thousands separators, e.g. US$1,800.
+export const price = (symbol: string, n: number) => `${symbol}${Math.round(Number(n)).toLocaleString('en-US')}`;
 
 export type Source = { publisher: string; url: string; title?: string | null };
 const one = <T,>(x: T | T[] | null | undefined): T | null => (Array.isArray(x) ? x[0] ?? null : x ?? null);
@@ -27,6 +29,7 @@ const one = <T,>(x: T | T[] | null | undefined): T | null => (Array.isArray(x) ?
 export type JobRow = {
   slug: string; name: string; category: string;
   low: number | null; median: number; high: number | null; asOf: string; source: Source;
+  customerHourly?: { low: number; high: number } | null;
 };
 
 export async function loadJobs(country: Country): Promise<JobRow[]> {
@@ -35,11 +38,18 @@ export async function loadJobs(country: Country): Promise<JobRow[]> {
     .select('pay_low, pay_median, pay_high, as_of, occupations(slug, name, category), sources(publisher, url)')
     .eq('country_code', country).eq('pay_unit', 'hour').order('pay_median', { ascending: false });
   if (error) throw new Error(error.message);
+  // Customer hourly rates (cost guides) where we have them; the list shows them next to the wage.
+  const { data: rates } = await db.from('service_prices').select('price_low, price_high, occupations(slug)')
+    .eq('country_code', country).eq('unit', 'hour');
+  const rateBySlug = new Map(((rates ?? []) as any[]).flatMap(r => {
+    const o = one<any>(r.occupations);
+    return o && r.price_low != null && r.price_high != null ? [[o.slug, { low: Number(r.price_low), high: Number(r.price_high) }] as const] : [];
+  }));
   return (data ?? []).flatMap((r: any) => {
     const o = one<any>(r.occupations); const s = one<any>(r.sources);
     if (!o || !s) return [];
     return [{ slug: o.slug, name: o.name?.en ?? o.slug, category: o.category, low: r.pay_low, median: Number(r.pay_median),
-      high: r.pay_high, asOf: r.as_of, source: { publisher: s.publisher, url: s.url } }];
+      high: r.pay_high, asOf: r.as_of, source: { publisher: s.publisher, url: s.url }, customerHourly: rateBySlug.get(o.slug) ?? null }];
   });
 }
 
@@ -58,6 +68,8 @@ export type JobDetail = {
     asOf: string; source: Source;
   };
   credentials: Credential[];
+  prices: { item: string; unit: 'hour' | 'job' | 'visit'; low: number | null; high: number | null; typical: number | null; source: Source; asOf: string }[];
+  selfEmployed: null | { pct: number; source: Source; asOf: string };
   apprenticeship: null | { approvedTitles: number; exampleTitles: string[]; typicalHours: number | null; asOf: string; source: Source };
 };
 
@@ -66,7 +78,7 @@ export async function loadJob(slug: string, country: Country): Promise<JobDetail
   const { data: occ, error } = await db.from('occupations').select('id, slug, name, category').eq('slug', slug).maybeSingle();
   if (error) throw new Error(error.message);
   if (!occ) return null;
-  const [pay, code, prof, req, ap] = await Promise.all([
+  const [pay, code, prof, req, ap, sp, mk] = await Promise.all([
     db.from('occupation_pay').select('pay_low, pay_median, pay_high, as_of, sources(publisher, url)')
       .eq('occupation_id', occ.id).eq('country_code', country).eq('pay_unit', 'hour').is('region_id', null).maybeSingle(),
     db.from('occupation_codes').select('system, code').eq('occupation_id', occ.id).eq('country_code', country).maybeSingle(),
@@ -77,8 +89,13 @@ export async function loadJob(slug: string, country: Country): Promise<JobDetail
     db.from('occupation_requirements').select('detail, as_of, sources(publisher, url, title)')
       .eq('occupation_id', occ.id).eq('country_code', country).eq('kind', 'experience')
       .eq('detail->>type', 'registered_apprenticeship').limit(1).maybeSingle(),
+    db.from('service_prices').select('item, unit, price_low, price_high, price_typical, as_of, sources(publisher, url, title)')
+      .eq('occupation_id', occ.id).eq('country_code', country).order('sort'),
+    db.from('occupation_market').select('self_employed_pct, as_of, sources(publisher, url, title)')
+      .eq('occupation_id', occ.id).eq('country_code', country).maybeSingle(),
   ]);
-  for (const r of [pay, code, prof, req, ap]) if (r.error) throw new Error(r.error.message);
+  for (const r of [pay, code, prof, req, ap, sp, mk]) if (r.error) throw new Error(r.error.message);
+  const m: any = mk.data;
   const p: any = pay.data; const pr: any = prof.data; const a: any = ap.data;
   const name = (occ.name as any)?.en ?? occ.slug;
   return {
@@ -96,6 +113,10 @@ export async function loadJob(slug: string, country: Country): Promise<JobDetail
       return [{ name: c.name?.en ?? '', kind: c.kind, issuer: c.issuer, mandatory: r.mandatory, note: r.detail?.note_en ?? null,
         infoUrl: c.info_url, asOf: c.as_of, source: one<any>(c.sources) }];
     }).sort((x, y) => Number(y.mandatory) - Number(x.mandatory)),
+    prices: ((sp.data ?? []) as any[]).map(r => ({ item: r.item?.en ?? '', unit: r.unit, low: r.price_low == null ? null : Number(r.price_low),
+      high: r.price_high == null ? null : Number(r.price_high), typical: r.price_typical == null ? null : Number(r.price_typical),
+      source: one<any>(r.sources), asOf: r.as_of })),
+    selfEmployed: m && m.self_employed_pct != null ? { pct: Number(m.self_employed_pct), source: one<any>(m.sources), asOf: m.as_of } : null,
     apprenticeship: a ? {
       approvedTitles: a.detail?.approved_titles ?? 0, exampleTitles: a.detail?.example_titles ?? [],
       typicalHours: a.detail?.typical_hours ?? null, asOf: a.as_of, source: one<any>(a.sources),

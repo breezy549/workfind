@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
-import { CATEGORY_LABEL, Country, JobDetail as Job, countryMeta, loadJob, money, registerInterest } from './data';
+import { CATEGORY_LABEL, Country, JobDetail as Job, countryMeta, loadJob, money, price, registerInterest } from './data';
 import { usLinks } from './links';
 import { s } from './styles';
 
@@ -58,6 +58,47 @@ export function JobDetail({ slug, country, onBack, onUsGuide }: { slug: string; 
           <Text style={s.payBig}>{money(meta.symbol, job.pay.median)}<Text style={s.unit}>/hour median</Text></Text>
           {meta.allJobsMedian ? <Text style={s.ratio}>{(job.pay.median / meta.allJobsMedian).toFixed(1)}× the all-jobs median in {meta.label}</Text> : null}
           {job.pay.low != null && job.pay.high != null ? <Text style={s.rangeFlat}>Middle half earns {money(meta.symbol, job.pay.low)} – {money(meta.symbol, job.pay.high)}/h</Text> : null}
+        </View>
+      ) : null}
+
+
+      {job.prices.length ? (
+        <View style={s.moneyBox}>
+          <Text style={s.badge}>WHAT CUSTOMERS PAY</Text>
+          {job.prices.map(x => (
+            <View key={x.item} style={s.priceRow}>
+              <Text style={s.priceItem}>{x.item}</Text>
+              <Text style={s.priceVal}>
+                {x.low != null && x.high != null ? `${price(meta.symbol, x.low)} – ${price(meta.symbol, x.high)}` : x.typical != null ? price(meta.symbol, x.typical) : ''}
+                <Text style={s.unit}>{x.unit === 'hour' ? '/h' : x.unit === 'visit' ? ' per visit' : ' per job'}</Text>
+              </Text>
+            </View>
+          ))}
+          {job.pay ? (() => {
+            // Compare a small, mostly-labor job only; big jobs include materials and days of work.
+            const mid = (x: Job['prices'][number]) => x.typical ?? (x.low != null && x.high != null ? (x.low + x.high) / 2 : null);
+            const ex = job.prices.find(x => x.unit === 'job' && (mid(x) ?? Infinity) <= 400);
+            const exPrice = ex ? mid(ex) : null;
+            return (
+              <View style={{ marginTop: 10 }}>
+                <Text style={s.bodySmall}>
+                  An employee in this job earns a median of {money(meta.symbol, job.pay.median)}/h. The rest of what the customer pays goes to the business: travel, insurance, the van and tools, office staff, time that can't be billed, and profit.
+                </Text>
+                {ex && exPrice ? (
+                  <Text style={s.highlight}>
+                    One “{ex.item.toLowerCase()}” job at about {price(meta.symbol, exPrice)} equals {(exPrice / job.pay.median).toFixed(1)} hours of a typical employee’s pay.
+                  </Text>
+                ) : null}
+              </View>
+            );
+          })() : null}
+          {job.selfEmployed ? (
+            <Text style={s.bodySmall}>
+              <Text style={s.factKey}>Going independent: </Text>
+              {job.selfEmployed.pct}% of people in this job are self-employed. With your own customers (and a license where your state requires one), you set the price, and the costs above become yours too.
+            </Text>
+          ) : null}
+          <Text style={s.small}>Customer prices are national ranges from cost guides, not quotes. They vary a lot by city and job.</Text>
         </View>
       ) : null}
 
@@ -181,6 +222,10 @@ export function JobDetail({ slug, country, onBack, onUsGuide }: { slug: string; 
         <Text style={s.sourcesTitle}>Sources</Text>
         {job.pay ? <Text style={s.sourceLink} onPress={() => Linking.openURL(job.pay!.source.url)}>Pay: {job.pay.source.publisher} (as of {job.pay.asOf})</Text> : null}
         {pr ? <Text style={s.sourceLink} onPress={() => Linking.openURL(links?.onet ?? pr.source.url)}>Job description, tasks, training and study topics: O*NET {pr.externalCode} ({pr.source.publisher}, as of {pr.asOf}), CC BY 4.0</Text> : null}
+        {[...new Map(job.prices.map(x => [x.source.url, x])).values()].map(x => (
+          <Text key={x.source.url} style={s.sourceLink} onPress={() => Linking.openURL(x.source.url)}>Customer prices: {x.source.publisher}{x.source.title ? `, ${x.source.title}` : ''} (checked {x.asOf})</Text>
+        ))}
+        {job.selfEmployed ? <Text style={s.sourceLink} onPress={() => Linking.openURL(job.selfEmployed!.source.url)}>Self-employed share: {job.selfEmployed.source.publisher} (checked {job.selfEmployed.asOf})</Text> : null}
         {appr ? <Text style={s.sourceLink} onPress={() => Linking.openURL(appr.source.url)}>Apprenticeships: {appr.source.publisher}, approved occupations list (checked {appr.asOf})</Text> : null}
         {job.credentials.filter(c => c.source).map(c => (
           <Text key={c.name} style={s.sourceLink} onPress={() => Linking.openURL(c.source!.url)}>{c.name}: {c.source!.publisher} (checked {c.asOf})</Text>
