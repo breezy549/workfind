@@ -1,0 +1,11 @@
+// Cloudflare Workers (static assets). Build first with `npm run build:web`, then `npx wrangler deploy`.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "workfind",
+  "compatibility_date": "2025-09-01",
+  "assets": {
+    "directory": "./dist",
+    // Unknown paths fall back to index.html; app routes live in the URL hash anyway.
+    "not_found_handling": "single-page-application"
+  }
+}
